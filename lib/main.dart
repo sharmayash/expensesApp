@@ -1,12 +1,17 @@
-import 'package:expenses_app/widgets/chart.dart';
 import 'package:flutter/material.dart';
+// import 'package:flutter/services.dart';
 
 import './models/transaction.dart';
-
 import './widgets/transaction_list.dart';
 import './widgets/new_transaction.dart';
+import './widgets/chart.dart';
 
-void main() => runApp(MyApp());
+void main() {
+  // SystemChrome.setPreferredOrientations([
+  //   DeviceOrientation.portraitUp,
+  // ]);
+  runApp(MyApp());
+}
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
@@ -35,6 +40,8 @@ class _MyHomePageState extends State<MyHomePage> {
     //     id: "t1", title: "chocolates", amount: 90, date: DateTime.now()),
     // Transaction(id: "t2", title: "Milk", amount: 50, date: DateTime.now()),
   ];
+
+  bool _showChart = false;
 
   List<Transaction> get _recentTransaction {
     return _transaction.where((tx) {
@@ -73,25 +80,68 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final mdq = MediaQuery.of(context);
+
+    final isLandScape = mdq.orientation == Orientation.landscape;
+
+    final myAppBar = AppBar(
+      title: Text('Personal Expenses'),
+      actions: <Widget>[
+        IconButton(
+          icon: Icon(Icons.add),
+          onPressed: () => _showOurModal(context),
+        )
+      ],
+      centerTitle: true,
+    );
+
+    final txListWidget = Container(
+        height: (mdq.size.height -
+                myAppBar.preferredSize.height -
+                mdq.padding.top) *
+            0.7,
+        child: TransactionList(_transaction, _deleteTransaction));
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Personal Expenses'),
-        actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.add),
-            onPressed: () => _showOurModal(context),
-          )
-        ],
-        centerTitle: true,
-      ),
+      appBar: myAppBar,
       backgroundColor: Colors.blueGrey[50],
       body: SingleChildScrollView(
         child: Column(
           // mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Chart(_recentTransaction),
-            TransactionList(_transaction, _deleteTransaction),
+            if (isLandScape)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Text("Show Chart"),
+                  Switch.adaptive(
+                    value: _showChart,
+                    onChanged: (val) {
+                      setState(() {
+                        _showChart = val;
+                      });
+                    },
+                  )
+                ],
+              ),
+            if (!isLandScape)
+              Container(
+                  height: (mdq.size.height -
+                          myAppBar.preferredSize.height -
+                          mdq.padding.top) *
+                      0.3,
+                  child: Chart(_recentTransaction)),
+            if (!isLandScape) txListWidget,
+            if (isLandScape)
+              _showChart
+                  ? Container(
+                      height: (mdq.size.height -
+                              myAppBar.preferredSize.height -
+                              mdq.padding.top) *
+                          0.7,
+                      child: Chart(_recentTransaction))
+                  : txListWidget
           ],
         ),
       ),
